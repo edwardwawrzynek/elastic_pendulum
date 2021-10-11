@@ -41,35 +41,41 @@ class Path:
     self.y = y
 
   # Get a Path from data stored in a csv file
-  # CSV should have three columns (with headers).
+  # CSV should have three columns (with two columns of headers).
   # For example:
 
+  # mass A
   # time, x, y
   # 0, 0.0, 0.0
   # 0.1, 0.1, -0.25
   @staticmethod
   def from_csv(path):
-    data = np.genfromtxt(path, dtype=None, delimiter=',', skip_header=1, unpack=True)
+    data = np.genfromtxt(path, dtype=None, delimiter=',', skip_header=2, unpack=True, encoding=None)
     # calculate time interval
     dt = data[0][1] - data[0][0]
     return Path(dt, data[0], data[1], data[2])
   
-  # convert a time to the nearest index
-  def time_to_index(self, time):
-    return math.floor(time / self.dt)
-
-  # get position at a given sample index
-  def sample_pos(self, index):
-    return Vec2(self.x[index], self.y[index])
-
-  # get velocity at a given sample index
-  def sample_velocity(self, index):
-    return self.sample_pos(index) - self.sample_pos(index - 1)
+  # Get the magnitude of position -- the length of pendulum (m)
+  def length(self):
+    return np.sqrt(np.square(self.x) + np.square(self.y))
   
-  # get velocity at a given time
-  def velocity(self, t):
-    return self.sample_velocity(self.time_to_index(t))
-
+  # Get the angle of the position from the horizontal (rad)
+  def angle_from_horizontal(self):
+    return np.arctan2(self.y, self.x)
+  
+  # get the angle of the position from the negative vertical: the angle the pendulum is inclined from its resting position (rad)
+  def angle_pendulum(self):
+    return np.arctan2(self.x, -self.y)
+  
+  # Get velocity as t, dx/dt, dy/dt
+  # length of returned values is one less than path length (due to numerical differentiation)
+  def velocity(self):
+    return self.t[1:], np.diff(self.x) * self.dt, np.diff(self.y) * self.dt
+  
+  # Get speed as t, |v|
+  def velocity_mag(self):
+    t, dx, dy = self.velocity()
+    return t, np.sqrt(np.square(dx), np.square(dy))
 
 # A point with a mass, position, and velocity
 class PointMass:
@@ -110,7 +116,7 @@ class ElasticPendulum:
     self.le = le
   
   def __str__(self):
-    return "Pendulum with k = {:.2f} N/m, equilibrium length le = {:.2f} m. Current state:\n{}".format(self.k, self.le, self.obj)
+    return "Elastic pendulum with k = {:.2f} N/m, equilibrium length le = {:.2f} m. Current state:\n{}".format(self.k, self.le, self.obj)
 
   # calculate force from gravity
   def force_gravity(self):
@@ -121,7 +127,7 @@ class ElasticPendulum:
     # amount of compression
     dx = self.obj.x.mag() - self.le
     # Hooke's law
-    return self.obj.x.normalize() * (-self.k * dx)
+    return self.obj.x.normalize() * -self.k * dx
   
   def force_net(self):
     return self.force_gravity() + self.force_spring()
