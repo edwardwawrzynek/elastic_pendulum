@@ -42,6 +42,7 @@ runs = [
   {
     "mass": 0.700,
     "start_pos": pendulum.Vec2(0, 0),
+    "natural_length":
   }
 ]
 
