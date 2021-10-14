@@ -1,0 +1,11 @@
+Spring Length Natural: 0.075 m
+with 0.500 kg: 0.226 m
+with 0.700 kg: 0.296 m
+with 0.200 kg: 0.145 m
+with 0.400 kg: 0.207 m
+
+Spring constant:
+30.2970062 N/m
+
+
+Starting pos: +16.5 cm, +59.0 cm

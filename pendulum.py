@@ -107,10 +107,7 @@ class ElasticPendulum:
   # k - spring constant (N/m)
   # l0 - initial spring starting length (m)
   # theta0 - initial starting angle from the vertical (rad)
-  def __init__(self, m, k, le, l0, theta0):
-    # calculate initial position (spring starts at origin)
-    pos = (Vec2(math.sin(theta0), -math.cos(theta0)) * l0)
-
+  def __init__(self, m, k, le, pos):
     self.obj = PointMass(m, pos, Vec2(0.0, 0.0))
     self.k = k
     self.le = le
