@@ -28,26 +28,38 @@ def plot_pendulum_angle(ax, path):
   ax.set_ylabel('angle (rad)')
   ax.plot(path.t, path.angle_pendulum())
 
+# Natural lengths of spring for different track markers
+
+# marker (tape + sharpie) on 500 g mass
+NATURAL_LENGTH_BASE_500g = 0.148
+# marker (tape + sharpie) on 200 g mass
+NATURAL_LENGTH_BASE_200g = 0.094 # TODO: confirm
+
 runs = [
   {
-    "mass": 0.500, 
-    "start_pos": pendulum.Vec2(0.1936689155, -0.3619377580),
-    "natural_length": 0.148
+    "name": "m500g",
+    "mass": 0.500,
+    "natural_length": NATURAL_LENGTH_BASE_500g
   },
   {
+    "name": "m400g",
     "mass": 0.400, 
-    "start_pos": pendulum.Vec2(0, 0),
-    "natural_length": 0.094
+    "natural_length": NATURAL_LENGTH_BASE_200g,
   },
   {
+    "name": "m700g",
     "mass": 0.700,
-    "start_pos": pendulum.Vec2(0, 0),
-    "natural_length":0.0
+    "natural_length": NATURAL_LENGTH_BASE_500g,
   },
   {
+    "name": "m900g",
     "mass": 0.900,
-    "start_pos": pendulum.Vec2(0, 0),
-    "natural_length": 0.148
+    "natural_length": NATURAL_LENGTH_BASE_500g,
+  },
+  {
+    "name": "m1000g",
+    "mass": 1.000,
+    "natural_length": NATURAL_LENGTH_BASE_500g,
   }
 ]
 
