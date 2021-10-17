@@ -3,6 +3,7 @@ import pendulum
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import samples
 
 # plotting utility methods
 
@@ -28,64 +29,39 @@ def plot_pendulum_angle(ax, path):
   ax.set_ylabel('angle (rad)')
   ax.plot(path.t, path.angle_pendulum())
 
-# Natural lengths of spring for different track markers
+# plot and save three path graphs
+def plot_sample_path(path, directory):
+  fig1, ax_p = plt.subplots()
+  fig2, ax_l = plt.subplots()
+  fig3, ax_a = plt.subplots()
 
-# marker (tape + sharpie) on 500 g mass
-NATURAL_LENGTH_BASE_500g = 0.148
-# marker (tape + sharpie) on 200 g mass
-NATURAL_LENGTH_BASE_200g = 0.094 # TODO: confirm
+  ax_p.set_title("Path")
+  plot_pos(ax_p, path)
+  ax_l.set_title("Spring Length vs Time")
+  plot_length(ax_l, path)
+  ax_a.set_title("Spring Angle vs Time")
+  plot_pendulum_angle(ax_a, path)
 
-runs = [
-  {
-    "name": "m500g",
-    "mass": 0.500,
-    "natural_length": NATURAL_LENGTH_BASE_500g
-  },
-  {
-    "name": "m400g",
-    "mass": 0.400, 
-    "natural_length": NATURAL_LENGTH_BASE_200g,
-  },
-  {
-    "name": "m700g",
-    "mass": 0.700,
-    "natural_length": NATURAL_LENGTH_BASE_500g,
-  },
-  {
-    "name": "m900g",
-    "mass": 0.900,
-    "natural_length": NATURAL_LENGTH_BASE_500g,
-  },
-  {
-    "name": "m1000g",
-    "mass": 1.000,
-    "natural_length": NATURAL_LENGTH_BASE_500g,
-  }
-]
+  fig1.savefig(directory + "/path.png")
+  fig2.savefig(directory + "/length.png")
+  fig3.savefig(directory + "/angle.png")
 
-# Natural length of the spring (m)
-NATURAL_LENGTH = 0.148
-# Mass of weight (kg)
-MASS = 0.500
 
-SPRING_CONSTANT = 30.2970062
+# plot simulated + real data for a sample
+def analyze_sample(sample):
+  # load recorded data
+  recorded_path = pendulum.Path.from_csv("data/" + sample["name"] + "/track.csv")
+  # get starting pos from recorded sample
+  start_pos = pendulum.Vec2(recorded_path.x[0], recorded_path.y[0])
+  # simulate path
+  p = pendulum.ElasticPendulum(sample["mass"], samples.SPRING_CONSTANT, sample["natural_length"], start_pos)
+  simulated_path = p.simulate(recorded_path.t.size * recorded_path.dt, recorded_path.dt / 50, 20)
+  # plot and save figures
+  plot_sample_path(recorded_path, "figures/" + sample["name"] + "/recorded")
+  plot_sample_path(simulated_path, "figures/" + sample["name"] + "/simulated")
 
-p = pendulum.ElasticPendulum(MASS, SPRING_CONSTANT, NATURAL_LENGTH, pendulum.Vec2(0.1936689155, -0.3619377580))
-path = p.simulate(20.0, 0.001, 20)
-#path = pendulum.Path.from_csv("data/m500g/track.csv")
-
-# graph
-fig1, ax = plt.subplots()
-fig2, ax_l = plt.subplots()
-fig3, ax_p = plt.subplots()
-#fig4, ax_f = plt.subplots()
-
-ax.set_title("Path")
-plot_pos(ax, path)
-ax_l.set_title("Spring Length vs Time")
-plot_length(ax_l, path)
-ax_p.set_title("Spring Angle vs Time")
-plot_pendulum_angle(ax_p, path)
+for sample in samples.samples:
+  analyze_sample(sample)
 
 # find the largest frequency component of angle (using fourier transform)
 #w = np.fft.fft(path.angle_pendulum())
@@ -99,5 +75,3 @@ plot_pendulum_angle(ax_p, path)
 #ax_f.set_xlabel('Frequency (hz)')
 #ax_f.set_ylabel('Amplitude (rad)')
 #ax_f.plot((freqs / path.dt)[0:math.floor(len(w)/2)], np.abs(w)[0:math.floor(len(w)/2)])
-
-plt.show()
