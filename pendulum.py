@@ -34,11 +34,13 @@ class Vec2:
 class Path:
   # t - time
   # x, y - position
-  def __init__(self, dt, t, x, y):
+  # err - error radius on position
+  def __init__(self, dt, t, x, y, err = np.ndarray(0)):
     self.dt = dt
     self.t = t
     self.x = x
     self.y = y
+    self.err = err
 
   # Get a Path from data stored in a csv file
   # CSV should have three columns (with two columns of headers).
@@ -57,7 +59,19 @@ class Path:
   
   # Get the magnitude of position -- the length of pendulum (m)
   def length(self):
-    return np.sqrt(np.square(self.x) + np.square(self.y))
+    # magnitude of pos
+    length_sq = np.square(self.x) + np.square(self.y)
+    length = np.sqrt(length_sq)
+    if self.err.size == 0:
+      return length, self.err
+    # relative err in x^2 and y^2
+    rel_err_x = 2.0 * np.abs(self.err / self.x)
+    rel_err_y = 2.0 * np.abs(self.err / self.y)
+    sum_err = (np.square(self.x) * rel_err_x) + (np.square(self.y) * rel_err_y)
+    # relative error in sqrt(x^2 + y^2)
+    rel_err = 0.5 * (sum_err / length_sq)
+    new_err = rel_err * length
+    return length, new_err
   
   # Get the angle of the position from the horizontal (rad)
   def angle_from_horizontal(self):
@@ -65,7 +79,20 @@ class Path:
   
   # get the angle of the position from the negative vertical: the angle the pendulum is inclined from its resting position (rad)
   def angle_pendulum(self):
-    return np.arctan2(self.x, -self.y)
+    # note: x and y flipped because we are doing angle to negative vertical
+    div_term = self.x / -self.y
+    angle = np.arctan2(self.x, -self.y)
+    if self.err.size == 0:
+      return angle, self.err
+    # relative err in x, y
+    rel_err_x = np.abs(self.err / self.x)
+    rel_err_y = np.abs(self.err / self.y)
+    # error in division
+    err_div = (rel_err_x + rel_err_y) * np.abs(div_term)
+    # error in arctan
+    # err = err(div_term) * d/dx arctan(div_term) = err(div_term) * 1/(1 + err(div_term))
+    new_err = err_div * (1.0 / (1.0 + div_term * div_term))
+    return angle, new_err
   
   # Get velocity as t, dx/dt, dy/dt
   # length of returned values is one less than path length (due to numerical differentiation)
@@ -76,6 +103,19 @@ class Path:
   def velocity_mag(self):
     t, dx, dy = self.velocity()
     return t, np.sqrt(np.square(dx), np.square(dy))
+  
+  # do a fourier transform on the given data
+  def fourier(self, data):
+    w = np.fft.fft(data)
+    freqs = np.fft.fftfreq(len(data)) / self.dt
+    return freqs[0:math.floor(len(data)/2)], w[0:math.floor(len(data)/2)]
+  
+  # get the primary frequency of a signal in data using a fourier transform
+  def largest_freq(self, data):
+    freqs, w = self.fourier(data)
+    idx = np.argmax(np.abs(w))
+    freq = freqs[idx]
+    return freq
 
 # A point with a mass, position, and velocity
 class PointMass:
