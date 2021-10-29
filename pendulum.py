@@ -30,17 +30,21 @@ class Vec2:
   def __str__(self):
     return "<{:.3f}, {:.3f}>".format(self.x, self.y)
 
+TIME_CUTOFF = 50.0
+
 # The path (simulated or real) of a pendulum
 class Path:
   # t - time
   # x, y - position
   # err - error radius on position
   def __init__(self, dt, t, x, y, err = np.ndarray(0)):
+    cutoff = math.ceil(TIME_CUTOFF / dt)
+
     self.dt = dt
-    self.t = t
-    self.x = x
-    self.y = y
-    self.err = err
+    self.t = t[:cutoff]
+    self.x = x[:cutoff]
+    self.y = y[:cutoff]
+    self.err = err[:cutoff]
 
   # Get a Path from data stored in a csv file
   # CSV should have three columns (with two columns of headers).
@@ -110,12 +114,36 @@ class Path:
     freqs = np.fft.fftfreq(len(data)) / self.dt
     return freqs[0:math.floor(len(data)/2)], w[0:math.floor(len(data)/2)]
   
+  # trim frequency + magnitude range for low bound (exclude upper bound)
+  def trim_freq(self, freqs, w, high_freq):
+    if high_freq == None:
+      return freqs, w
+    
+    idx = freqs.size - 1
+    while freqs[idx] > high_freq:
+      idx -= 1
+    
+    return freqs[:idx], w[:idx]
+
   # get the primary frequency of a signal in data using a fourier transform
-  def largest_freq(self, data):
+  def largest_freq(self, data, high_freq = None):
     freqs, w = self.fourier(data)
-    idx = np.argmax(np.abs(w))
+    freqs, w = self.trim_freq(freqs, w, high_freq)
+    mags = np.abs(w)
+    idx = np.argmax(mags)
     freq = freqs[idx]
-    return freq
+    max_mag = mags[idx]
+    # calculate uncertainty as half the range before the magnitude of w is less than 1/5 max mag
+    idx_high = idx
+    idx_low = idx
+    while idx_high < mags.size - 1 and mags[idx_high] > max_mag / 4:
+      idx_high += 1
+    while idx_low > 0 and mags[idx_low] > max_mag / 4:
+      idx_low -= 1
+    
+    err = abs(freqs[idx_high] - freqs[idx_low]) / 2
+
+    return freq, err
 
 # A point with a mass, position, and velocity
 class PointMass:

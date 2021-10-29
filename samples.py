@@ -10,7 +10,7 @@ SPRING_CONSTANT = 30.2970062
 
 # uncertainty radius on position data
 # TODO: actually calculate this
-POS_UNCERTAINTY = 0.01
+POS_UNCERTAINTY = 0.005
 
 samples = [
   {
